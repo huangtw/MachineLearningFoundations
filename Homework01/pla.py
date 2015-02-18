@@ -1,4 +1,4 @@
-import sys, numpy
+import sys, numpy, random
 
 def load_data(input_file_name):
     input_data_list = []
@@ -16,35 +16,48 @@ def load_data(input_file_name):
         input_data_list.append((numpy.array(vector), result))
     return input_data_list
 
-def find_mistake(weight_vector, input_data_list):
-    for data in input_data_list:
-        if numpy.dot(weight_vector, data[0]) > 0:
-            result = 1
-        else:
-            result = -1
+def learn(weight_vector, input_data_list, order_type):
+    update_counter = 0
+    order = gen_order(order_type, len(input_data_list))
 
-        if result != data[1]:
-            return data[1]*data[0]
-    return None
-
-
-def learn(weight_vector, input_data_list):
-    update_counter = 0 
     while 1:
-        mistake = find_mistake(weight_vector, input_data_list)
-        if mistake != None:
-            weight_vector = weight_vector + mistake
-            update_counter = update_counter + 1
+        mistake_counter = 0
+        for i in order:
+            data = input_data_list[i]
+            if numpy.dot(weight_vector, data[0]) > 0:
+                result = 1
+            else:
+                result = -1
+
+            if result != data[1]:
+                weight_vector = weight_vector + data[1]*data[0]
+                mistake_counter = mistake_counter + 1
+
+        if mistake_counter == 0:
+            return update_counter
         else:
-            print str(update_counter) + " " + str(weight_vector)
-            return
+            update_counter = update_counter + mistake_counter
+
+def gen_order(order_type, len):
+    if order_type == "pre_random":
+        random.seed()
+        return random.sample(range(len), len)
+    else:
+        return range(len)
 
 def main():
     input_file_name = sys.argv[1]
+    order_type = sys.argv[2]
+    times = int(sys.argv[3])
     weight_vector = numpy.array([0.0, 0.0, 0.0, 0.0, 0.0])
 
     input_data_list = load_data(input_file_name)
-    learn(weight_vector, input_data_list)
+
+    total_update = 0
+    for i in range(times):
+        total_update = total_update + learn(weight_vector, input_data_list, order_type)
+
+    print "%d times, average = %f updates" % (times, total_update/times)
 
 if __name__ == '__main__':
     main()
